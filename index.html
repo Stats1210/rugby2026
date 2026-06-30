@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0f1117">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Rugby 2026">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<title>Rugby 2026</title>
+<style>
+  :root {
+    --bg: #0f1117; --card: #1a1d27; --card2: #22263a; --accent: #e8a020;
+    --accent2: #4fc3f7; --text: #f0f0f0; --muted: #8a8fa8; --green: #4caf50;
+    --border: #2e3248; --pill-bg: #2a2e40;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  body { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; min-height: 100vh; padding-bottom: env(safe-area-inset-bottom); }
+
+  header { background: linear-gradient(135deg, #1a1d27, #0f1117); padding: calc(14px + env(safe-area-inset-top)) 16px 14px; position: sticky; top: 0; z-index: 100; border-bottom: 1px solid var(--border); }
+  .header-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+  .logo { display: flex; align-items: center; gap: 9px; }
+  .logo-icon { font-size: 24px; }
+  h1 { font-size: 18px; font-weight: 700; color: var(--accent); }
+  .subtitle { font-size: 11px; color: var(--muted); margin-top: 1px; display: flex; align-items: center; gap: 5px; }
+  .live-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); display: inline-block; }
+  .live-dot.stale { background: var(--muted); }
+
+  .refresh-btn { background: var(--pill-bg); border: 1px solid var(--border); color: var(--text); border-radius: 50%; width: 38px; height: 38px; font-size: 17px; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .refresh-btn:active { background: var(--accent); color: #000; }
+  .refresh-btn.spinning { animation: spin 0.8s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .controls { display: flex; gap: 8px; flex-wrap: wrap; }
+  .tz-toggle { display: flex; background: var(--pill-bg); border-radius: 22px; padding: 3px; gap: 2px; }
+  .tz-btn { padding: 6px 13px; border-radius: 18px; border: none; font-size: 12px; font-weight: 600; cursor: pointer; color: var(--muted); background: transparent; transition: all 0.2s; white-space: nowrap; line-height: 1.15; text-align: center; }
+  .tz-btn.active { background: var(--accent); color: #000; }
+  select { background: var(--pill-bg); color: var(--text); border: 1px solid var(--border); border-radius: 22px; padding: 6px 12px; font-size: 13px; cursor: pointer; outline: none; flex: 1; min-width: 130px; }
+
+  main { padding: 12px; max-width: 620px; margin: 0 auto; }
+
+  .install-hint { background: var(--card2); border: 1px dashed var(--accent); border-radius: 12px; padding: 12px 14px; margin-bottom: 14px; font-size: 12px; color: var(--text); display: none; align-items: flex-start; gap: 10px; line-height: 1.5; }
+  .install-hint.show { display: flex; }
+  .install-hint .x { margin-left: auto; color: var(--muted); cursor: pointer; font-size: 16px; padding: 0 4px; }
+  .install-hint b { color: var(--accent); }
+
+  .stats-bar { background: var(--card); border-radius: 12px; padding: 12px 16px; margin-bottom: 16px; display: flex; gap: 16px; justify-content: center; }
+  .stat { text-align: center; flex: 1; }
+  .stat-val { font-size: 22px; font-weight: 800; color: var(--accent); }
+  .stat-label { font-size: 10px; color: var(--muted); margin-top: 1px; }
+
+  .round-header { font-size: 13px; font-weight: 700; color: var(--accent); text-transform: uppercase; letter-spacing: 0.8px; padding: 16px 4px 8px; display: flex; align-items: center; gap: 8px; }
+  .round-header .date-range { color: var(--muted); font-weight: 500; font-size: 11px; text-transform: none; letter-spacing: 0; }
+
+  .match-card { background: var(--card); border-radius: 14px; margin-bottom: 10px; border: 1px solid var(--border); overflow: hidden; }
+  .match-card.live { border-color: #ff5252; box-shadow: 0 0 0 1px #ff5252; }
+  .match-card.finished { opacity: 0.85; }
+  .match-card.upcoming-next { border-color: var(--accent); }
+
+  .match-top { padding: 12px 14px 10px; }
+  .match-meta { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; }
+  .match-time { font-size: 13px; font-weight: 700; color: var(--accent2); }
+  .match-date { font-size: 11px; color: var(--muted); margin-top: 1px; }
+  .match-badge { font-size: 10px; padding: 3px 9px; border-radius: 10px; font-weight: 700; white-space: nowrap; }
+  .badge-live { background: #ff5252; color: #fff; }
+  .badge-done { background: #2e3248; color: var(--muted); }
+  .badge-next { background: var(--accent); color: #000; }
+  .badge-auto { background: var(--green); color: #fff; }
+
+  .teams { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .team { flex: 1; text-align: center; min-width: 0; }
+  .team-flag { font-size: 30px; display: block; margin-bottom: 3px; line-height: 1; }
+  .team-name { font-size: 12.5px; font-weight: 600; line-height: 1.2; }
+  .team-rank { font-size: 10px; color: var(--muted); }
+  .vs { color: var(--muted); font-size: 12px; font-weight: 600; flex-shrink: 0; }
+
+  .score-area { display: flex; align-items: center; justify-content: center; gap: 14px; margin-top: 12px; }
+  .score-box { display: flex; align-items: center; gap: 7px; }
+  .score-input { width: 50px; text-align: center; background: var(--card2); border: 1px solid var(--border); border-radius: 8px; color: var(--text); font-size: 20px; font-weight: 700; padding: 6px 2px; outline: none; -moz-appearance: textfield; }
+  .score-input::-webkit-outer-spin-button, .score-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+  .score-input:focus { border-color: var(--accent); }
+  .score-dash { font-size: 18px; font-weight: 700; color: var(--muted); }
+  .save-btn { background: var(--accent); color: #000; border: none; border-radius: 8px; padding: 7px 15px; font-size: 13px; font-weight: 700; cursor: pointer; margin-left: 6px; }
+  .save-btn:active { opacity: 0.8; }
+  .saved-score { font-size: 24px; font-weight: 800; letter-spacing: 2px; }
+  .saved-score .win { color: var(--green); }
+  .saved-score .lose { color: var(--muted); }
+  .clear-btn-x { font-size: 13px; color: var(--muted); background: none; border: 1px solid var(--border); border-radius: 6px; cursor: pointer; padding: 4px 8px; }
+
+  .match-venue { padding: 7px 14px 10px; font-size: 11px; color: var(--muted); border-top: 1px solid var(--border); }
+
+  .no-matches { text-align: center; padding: 40px 20px; color: var(--muted); font-size: 14px; }
+  .footer-note { text-align: center; padding: 24px 16px 16px; font-size: 11px; color: var(--muted); line-height: 1.6; }
+  .reset-link { font-size: 11px; color: var(--muted); background: none; border: none; text-decoration: underline; cursor: pointer; }
+
+  @media (prefers-color-scheme: light) {
+    :root { --bg: #eef0f7; --card: #fff; --card2: #eef0f7; --text: #15151c; --muted: #5d6175; --pill-bg: #e2e5f0; --border: #d3d7e6; }
+    h1 { color: #b07010; } .match-time { color: #1565c0; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-top">
+    <div class="logo">
+      <span class="logo-icon">🏉</span>
+      <div>
+        <h1>Rugby 2026</h1>
+        <div class="subtitle"><span class="live-dot stale" id="liveDot"></span><span id="updateStatus">Nations Championship</span></div>
+      </div>
+    </div>
+    <button class="refresh-btn" id="refreshBtn" onclick="fetchResults(true)" title="Refresh results">⟳</button>
+  </div>
+  <div class="controls">
+    <div class="tz-toggle">
+      <button class="tz-btn active" id="btn-cet" onclick="setTZ('CET')">CET<br><span style="font-size:10px;font-weight:400">Norway</span></button>
+      <button class="tz-btn" id="btn-syd" onclick="setTZ('SYD')">AEDT<br><span style="font-size:10px;font-weight:400">Sydney</span></button>
+    </div>
+    <select id="teamFilter" onchange="renderMatches()">
+      <option value="">🔍 All teams</option>
+      <option>Argentina</option><option>Australia</option><option>England</option>
+      <option>Fiji</option><option>France</option><option>Ireland</option>
+      <option>Italy</option><option>Japan</option><option>New Zealand</option>
+      <option>Scotland</option><option>South Africa</option><option>Wales</option>
+    </select>
+  </div>
+</header>
+
+<main id="app"></main>
+
+<script>
+const FLAGS = {
+  'New Zealand':'🇳🇿','France':'🇫🇷','Japan':'🇯🇵','Italy':'🇮🇹','Australia':'🇦🇺',
+  'Ireland':'🇮🇪','Fiji':'🇫🇯','Wales':'🏴󠁧󠁢󠁷󠁬󠁳󠁿','South Africa':'🇿🇦','England':'🏴󠁧󠁢󠁥󠁮󠁧󠁿',
+  'Argentina':'🇦🇷','Scotland':'🏴󠁧󠁢󠁳󠁣󠁴󠁿',
+  'Northern 1st':'🏆','Northern 2nd':'🥈','Northern 3rd':'🥉','Northern 4th':'4️⃣','Northern 5th':'5️⃣','Northern 6th':'6️⃣',
+  'Southern 1st':'🏆','Southern 2nd':'🥈','Southern 3rd':'🥉','Southern 4th':'4️⃣','Southern 5th':'5️⃣','Southern 6th':'6️⃣'
+};
+
+const ROUND_DATES = {
+  'Round 1':'4 Jul 2026','Round 2':'11 Jul 2026','Round 3':'18 Jul 2026',
+  'Round 4':'6–8 Nov 2026','Round 5':'13–15 Nov 2026','Round 6':'21 Nov 2026',
+  'Final (6th)':'27 Nov 2026','Final (5th)':'27 Nov 2026','Final (4th)':'28 Nov 2026',
+  'Final (3rd)':'28 Nov 2026','Final (2nd)':'29 Nov 2026','Grand Final':'29 Nov 2026'
+};
+
+// [id, stage, home, away, venue, CET_iso, SYD_iso]
+const MATCHES = [
+  [1,'Round 1','New Zealand (2)','France (4)','One NZ Stadium, Christchurch','2026-07-04T09:10','2026-07-04T17:10'],
+  [2,'Round 1','Japan (12)','Italy (10)','Chichibunomiya, Tokyo','2026-07-04T10:40','2026-07-04T18:40'],
+  [3,'Round 1','Australia (8)','Ireland (3)','Sydney Football Stadium, Sydney','2026-07-04T12:10','2026-07-04T20:10'],
+  [4,'Round 1','Fiji (9)','Wales (11)','Cardiff City Stadium, Cardiff','2026-07-04T15:10','2026-07-04T23:10'],
+  [5,'Round 1','South Africa (1)','England (5)','Ellis Park, Johannesburg','2026-07-04T17:40','2026-07-05T01:40'],
+  [6,'Round 1','Argentina (6)','Scotland (7)','Estadio Kempes, Córdoba','2026-07-04T21:10','2026-07-05T05:10'],
+  [7,'Round 2','New Zealand (2)','Italy (10)','Sky Stadium, Wellington','2026-07-11T07:10','2026-07-11T15:10'],
+  [8,'Round 2','Australia (8)','France (4)','Suncorp Stadium, Brisbane','2026-07-11T09:40','2026-07-11T17:40'],
+  [9,'Round 2','Japan (12)','Ireland (3)','McDonald Jones Stadium, Newcastle','2026-07-11T12:10','2026-07-11T20:10'],
+  [10,'Round 2','Fiji (9)','England (5)','Hill Dickinson Stadium, Liverpool','2026-07-11T15:10','2026-07-11T23:10'],
+  [11,'Round 2','South Africa (1)','Scotland (7)','Loftus Versfeld, Pretoria','2026-07-11T17:40','2026-07-12T01:40'],
+  [12,'Round 2','Argentina (6)','Wales (11)','Estadio San Juan, San Juan','2026-07-11T21:10','2026-07-12T05:10'],
+  [13,'Round 3','New Zealand (2)','Ireland (3)','Eden Park, Auckland','2026-07-18T09:10','2026-07-18T17:10'],
+  [14,'Round 3','Japan (12)','France (4)','National Stadium, Tokyo','2026-07-18T10:40','2026-07-18T18:40'],
+  [15,'Round 3','Australia (8)','Italy (10)','HBF Park, Perth','2026-07-18T12:10','2026-07-18T20:10'],
+  [16,'Round 3','Fiji (9)','Scotland (7)','Murrayfield, Edinburgh','2026-07-18T15:10','2026-07-18T23:10'],
+  [17,'Round 3','South Africa (1)','Wales (11)','Kings Park, Durban','2026-07-18T17:40','2026-07-19T01:40'],
+  [18,'Round 3','Argentina (6)','England (5)','Estadio Único, Santiago del Estero','2026-07-18T21:10','2026-07-19T05:10'],
+  [19,'Round 4','Ireland (3)','Argentina (6)','Aviva Stadium, Dublin','2026-11-06T21:10','2026-11-07T07:10'],
+  [20,'Round 4','Italy (10)','South Africa (1)','Estadio Camilo Cano, La Nucía','2026-11-07T12:40','2026-11-07T22:40'],
+  [21,'Round 4','Scotland (7)','New Zealand (2)','Murrayfield, Edinburgh','2026-11-07T15:10','2026-11-08T01:10'],
+  [22,'Round 4','Wales (11)','Japan (12)','Principality Stadium, Cardiff','2026-11-07T17:40','2026-11-08T03:40'],
+  [23,'Round 4','France (4)','Fiji (9)','Parc OL, Lyon','2026-11-07T21:10','2026-11-08T07:10'],
+  [24,'Round 4','England (5)','Australia (8)','Twickenham, London','2026-11-08T16:10','2026-11-09T02:10'],
+  [25,'Round 5','France (4)','South Africa (1)','Stade de France, Paris','2026-11-13T21:10','2026-11-14T07:10'],
+  [26,'Round 5','Italy (10)','Argentina (6)','Stadio Luigi Ferraris, Genoa','2026-11-14T12:40','2026-11-14T22:40'],
+  [27,'Round 5','Wales (11)','New Zealand (2)','Principality Stadium, Cardiff','2026-11-14T15:10','2026-11-15T01:10'],
+  [28,'Round 5','England (5)','Japan (12)','Twickenham, London','2026-11-14T17:40','2026-11-15T03:40'],
+  [29,'Round 5','Ireland (3)','Fiji (9)','Aviva Stadium, Dublin','2026-11-14T21:10','2026-11-15T07:10'],
+  [30,'Round 5','Scotland (7)','Australia (8)','Murrayfield, Edinburgh','2026-11-15T16:10','2026-11-16T02:10'],
+  [31,'Round 6','Scotland (7)','Japan (12)','Murrayfield, Edinburgh','2026-11-21T15:10','2026-11-22T01:10'],
+  [32,'Round 6','England (5)','New Zealand (2)','Twickenham, London','2026-11-21T15:10','2026-11-22T01:10'],
+  [33,'Round 6','Ireland (3)','South Africa (1)','Aviva Stadium, Dublin','2026-11-21T17:40','2026-11-22T03:40'],
+  [34,'Round 6','Italy (10)','Fiji (9)','Stadio Friuli, Udine','2026-11-21T17:40','2026-11-22T03:40'],
+  [35,'Round 6','Wales (11)','Australia (8)','Principality Stadium, Cardiff','2026-11-21T21:10','2026-11-22T07:10'],
+  [36,'Round 6','France (4)','Argentina (6)','Stade de France, Paris','2026-11-21T21:10','2026-11-22T07:10'],
+  [37,'Final (6th)','Northern 6th','Southern 6th','Twickenham, London','2026-11-27T17:40','2026-11-28T03:40'],
+  [38,'Final (5th)','Northern 5th','Southern 5th','Twickenham, London','2026-11-27T21:10','2026-11-28T07:10'],
+  [39,'Final (4th)','Northern 4th','Southern 4th','Twickenham, London','2026-11-28T14:10','2026-11-29T00:10'],
+  [40,'Final (3rd)','Northern 3rd','Southern 3rd','Twickenham, London','2026-11-28T17:40','2026-11-29T03:40'],
+  [41,'Final (2nd)','Northern 2nd','Southern 2nd','Twickenham, London','2026-11-29T14:10','2026-11-30T00:10'],
+  [42,'Grand Final','Northern 1st','Southern 1st','Twickenham, London','2026-11-29T17:40','2026-11-30T03:40']
+];
+
+let currentTZ = localStorage.getItem('tz') || 'CET';
+let manualScores = JSON.parse(localStorage.getItem('rugby_scores') || '{}');
+let autoScores = JSON.parse(localStorage.getItem('rugby_auto') || '{}'); // id -> {h,a,status}
+
+function setTZ(tz) {
+  currentTZ = tz;
+  localStorage.setItem('tz', tz);
+  document.getElementById('btn-cet').classList.toggle('active', tz === 'CET');
+  document.getElementById('btn-syd').classList.toggle('active', tz === 'SYD');
+  renderMatches();
+}
+function getTeamName(full){ return full.replace(/\s*\(\d+\)/,''); }
+function matchesFilter(home, away){
+  const f = document.getElementById('teamFilter').value;
+  if(!f) return true;
+  return getTeamName(home)===f || getTeamName(away)===f;
+}
+function formatDT(isoStr){
+  const dt = new Date(isoStr+':00');
+  const days=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  const months=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  return { date:`${days[dt.getDay()]} ${dt.getDate()} ${months[dt.getMonth()]}`, time:dt.toTimeString().slice(0,5), ts:dt.getTime() };
+}
+// Auto results win over manual; manual is a fallback for matches not in the feed
+function scoreFor(id){ return autoScores[id] || manualScores[id] || null; }
+
+function saveScore(id){
+  const h=document.getElementById(`h${id}`).value, a=document.getElementById(`a${id}`).value;
+  if(h!=='' && a!==''){
+    manualScores[id]={h:parseInt(h),a:parseInt(a),status:'manual'};
+    localStorage.setItem('rugby_scores', JSON.stringify(manualScores));
+    renderMatches();
+  }
+}
+function clearScore(id){
+  delete manualScores[id]; delete autoScores[id];
+  localStorage.setItem('rugby_scores', JSON.stringify(manualScores));
+  localStorage.setItem('rugby_auto', JSON.stringify(autoScores));
+  renderMatches();
+}
+function clearAllScores(){
+  if(confirm('Reset all manually-entered scores? (Auto results will refresh on next sync.)')){
+    manualScores={}; localStorage.removeItem('rugby_scores'); renderMatches();
+  }
+}
+
+// ---- Live results: fetch results.json published by the serverless function ----
+async function fetchResults(userInitiated){
+  const btn=document.getElementById('refreshBtn');
+  if(userInitiated) btn.classList.add('spinning');
+  try{
+    const res = await fetch('./results.json?live=' + Date.now(), {cache:'no-store'});
+    if(!res.ok) throw new Error('no feed');
+    const data = await res.json();
+    // Expected shape: { updated: <iso>, results: { "<id>": {h,a,status} } }
+    if(data && data.results){
+      autoScores = {};
+      for(const [id,r] of Object.entries(data.results)){
+        if(r && r.h!=null && r.a!=null) autoScores[id]={h:r.h,a:r.a,status:r.status||'FT'};
+      }
+      localStorage.setItem('rugby_auto', JSON.stringify(autoScores));
+      localStorage.setItem('rugby_updated', data.updated || new Date().toISOString());
+    }
+    setUpdateStatus(true);
+  }catch(e){
+    setUpdateStatus(false);
+  }finally{
+    if(userInitiated) setTimeout(()=>btn.classList.remove('spinning'), 600);
+    renderMatches();
+  }
+}
+function setUpdateStatus(ok){
+  const dot=document.getElementById('liveDot'), s=document.getElementById('updateStatus');
+  const updated=localStorage.getItem('rugby_updated');
+  if(updated){
+    const d=new Date(updated), diff=(Date.now()-d.getTime())/60000;
+    let when = diff<2?'just now':diff<60?`${Math.round(diff)} min ago`:diff<1440?`${Math.round(diff/60)} h ago`:d.toLocaleDateString();
+    s.textContent='Results updated '+when;
+    dot.classList.toggle('stale', diff>180);
+  } else {
+    s.textContent = Object.keys(autoScores).length ? 'Live results on' : 'Nations Championship';
+    dot.classList.add('stale');
+  }
+}
+
+function renderMatches(){
+  const now=Date.now();
+  const groups={}, order=[];
+  for(const m of MATCHES){
+    if(!matchesFilter(m[2],m[3])) continue;
+    if(!groups[m[1]]){ groups[m[1]]=[]; order.push(m[1]); }
+    groups[m[1]].push(m);
+  }
+  let nextId=null;
+  for(const m of MATCHES){
+    const ts=formatDT(m[5]).ts;
+    if(ts>now && !scoreFor(m[0])){ nextId=m[0]; break; }
+  }
+
+  let html='';
+  const visible = MATCHES.filter(m=>matchesFilter(m[2],m[3]));
+  const total=visible.length;
+  const played=visible.filter(m=>scoreFor(m[0])).length;
+  html+=`<div class="stats-bar">
+    <div class="stat"><div class="stat-val">${total}</div><div class="stat-label">Matches</div></div>
+    <div class="stat"><div class="stat-val">${played}</div><div class="stat-label">Results</div></div>
+    <div class="stat"><div class="stat-val">${total-played}</div><div class="stat-label">Upcoming</div></div>
+  </div>`;
+
+  if(order.length===0){ html+=`<div class="no-matches">No matches for that team.</div>`; }
+
+  for(const stage of order){
+    const dr=ROUND_DATES[stage]?`<span class="date-range">${ROUND_DATES[stage]}</span>`:'';
+    html+=`<div class="round-header">${stage}${dr}</div>`;
+    for(const m of groups[stage]){
+      const [id,,home,away,venue,cetISO,sydISO]=m;
+      const isoStr=currentTZ==='CET'?cetISO:sydISO;
+      const tzLabel=currentTZ==='CET'?'CET':'AEDT';
+      const {date,time,ts}=formatDT(isoStr);
+      const matchEnd=ts+2*3600*1000;
+      const sc=scoreFor(id);
+      const isLive=!sc && now>=ts && now<=matchEnd;
+      const isNext=id===nextId;
+
+      let cardClass='match-card';
+      if(isLive) cardClass+=' live';
+      else if(sc) cardClass+=' finished';
+      else if(isNext) cardClass+=' upcoming-next';
+
+      let badge='';
+      if(sc && sc.status && sc.status!=='manual' && sc.status!=='FT') badge=`<span class="match-badge badge-auto">${sc.status}</span>`;
+      else if(sc) badge=`<span class="match-badge badge-done">FT</span>`;
+      else if(isLive) badge=`<span class="match-badge badge-live">🔴 LIVE</span>`;
+      else if(isNext) badge=`<span class="match-badge badge-next">NEXT UP</span>`;
+
+      const hT=getTeamName(home), aT=getTeamName(away);
+      const hRank=home.match(/\((\d+)\)/)?`#${home.match(/\((\d+)\)/)[1]}`:'';
+      const aRank=away.match(/\((\d+)\)/)?`#${away.match(/\((\d+)\)/)[1]}`:'';
+
+      let scoreHTML;
+      if(sc){
+        const hCls=sc.h>sc.a?'win':sc.h<sc.a?'lose':'';
+        const aCls=sc.a>sc.h?'win':sc.a<sc.h?'lose':'';
+        scoreHTML=`<div class="score-area">
+          <span class="saved-score"><span class="${hCls}">${sc.h}</span> – <span class="${aCls}">${sc.a}</span></span>
+          <button class="clear-btn-x" onclick="clearScore(${id})" title="Clear">✕</button>
+        </div>`;
+      } else {
+        scoreHTML=`<div class="score-area"><div class="score-box">
+          <input class="score-input" id="h${id}" type="number" inputmode="numeric" min="0" max="200" placeholder="–">
+          <span class="score-dash">–</span>
+          <input class="score-input" id="a${id}" type="number" inputmode="numeric" min="0" max="200" placeholder="–">
+          <button class="save-btn" onclick="saveScore(${id})">Save</button>
+        </div></div>`;
+      }
+
+      html+=`<div class="${cardClass}">
+        <div class="match-top">
+          <div class="match-meta">
+            <div><div class="match-time">${time} <span style="font-size:10px;color:var(--muted)">${tzLabel}</span></div>
+            <div class="match-date">${date}</div></div>
+            ${badge}
+          </div>
+          <div class="teams">
+            <div class="team"><span class="team-flag">${FLAGS[hT]||'🏉'}</span><div class="team-name">${hT}</div><div class="team-rank">${hRank}</div></div>
+            <div class="vs">v</div>
+            <div class="team"><span class="team-flag">${FLAGS[aT]||'🏉'}</span><div class="team-name">${aT}</div><div class="team-rank">${aRank}</div></div>
+          </div>
+          ${scoreHTML}
+        </div>
+        <div class="match-venue">📍 ${venue}</div>
+      </div>`;
+    }
+  }
+  html+=`<div class="footer-note">
+    Times shown in <b style="color:var(--accent)">${currentTZ==='CET'?'CET (Norway)':'AEDT (Sydney)'}</b>. Results sync automatically when matches finish.<br>
+    <button class="reset-link" onclick="clearAllScores()">Reset manual scores</button>
+  </div>`;
+
+  document.getElementById('app').innerHTML=html;
+  document.getElementById('btn-cet').classList.toggle('active', currentTZ==='CET');
+  document.getElementById('btn-syd').classList.toggle('active', currentTZ==='SYD');
+  setUpdateStatus();
+}
+
+// ---- Init ----
+setTZ(currentTZ);
+fetchResults(false);
+setInterval(()=>fetchResults(false), 120000); // auto-sync every 2 min while open
+setInterval(renderMatches, 60000);             // refresh LIVE badges
+
+// Register service worker (only works when hosted over http/https, not file://)
+if('serviceWorker' in navigator && location.protocol.startsWith('http')){
+  navigator.serviceWorker.register('sw.js').catch(()=>{});
+}
+</script>
+</body>
+</html>

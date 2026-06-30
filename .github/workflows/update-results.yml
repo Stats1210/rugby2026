@@ -1,0 +1,42 @@
+name: Update live results
+
+on:
+  schedule:
+    - cron: "*/10 * * * *"   # every 10 minutes (GitHub may delay under load — fine for rugby)
+  workflow_dispatch:          # lets you run it manually from the Actions tab
+  push:
+    branches: [ main ]        # also refresh on every push
+
+permissions:
+  contents: write             # allows the workflow to commit results.json back
+
+concurrency:
+  group: update-results
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Fetch results
+        env:
+          APISPORTS_KEY: ${{ secrets.APISPORTS_KEY }}
+        run: node scripts/fetch-results.mjs
+
+      - name: Commit if changed
+        run: |
+          git config user.name "rugby-bot"
+          git config user.email "actions@github.com"
+          if [[ -n "$(git status --porcelain results.json)" ]]; then
+            git add results.json
+            git commit -m "Update live results [skip ci]"
+            git push
+          else
+            echo "No change."
+          fi
