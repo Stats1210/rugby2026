@@ -1,5 +1,4 @@
 {
-  "updated": null,
-  "note": "Auto-populated by the serverless function once matches start (4 July 2026). Until then this is empty and the app uses manual score entry. Shape: results[matchId] = { h, a, status }.",
+  "updated": "2026-06-30T08:28:11.802Z",
   "results": {}
 }
